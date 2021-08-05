@@ -39,7 +39,7 @@ namespace IRCrarria
                 {
                     jarg.Channel.MessageReceived += (ksn, karg) =>
                     {
-                        TShock.Utils.Broadcast($"[c/CE1F6A:[I]] [c/FF9A8C:{karg.Source.Name}]: {karg.Text}", Color.White);
+                        TShock.Utils.Broadcast($"[c/CE1F6A:IRC] [c/FF9A8C:{karg.Source.Name}] {karg.Text.StripNonAscii()}", Color.White);
                     };
                     _ircChannel = jarg.Channel;
                 };
@@ -53,7 +53,7 @@ namespace IRCrarria
         private void OnChat(PlayerChatEventArgs ev)
         {
             _irc.LocalUser.SendMessage(_ircChannel, $"<{ev.Player.Name}> {ev.RawText}");
-            TShock.Utils.Broadcast($"[c/28FFBF:[T]] [c/BCFFB9:{ev.Player.Name}]: {ev.RawText}", Color.White);
+            TShock.Utils.Broadcast($"[c/28FFBF:Terraria] [c/BCFFB9:{ev.Player.Name}] {ev.RawText.StripNonAscii()}", Color.White);
             ev.Handled = true;
         }
 
