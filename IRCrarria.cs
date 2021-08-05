@@ -1,5 +1,7 @@
 ﻿using System;
+using System.IO;
 using IrcDotNet;
+using Microsoft.Xna.Framework;
 using Terraria;
 using TerrariaApi.Server;
 using TShockAPI;
@@ -10,37 +12,49 @@ namespace IRCrarria
     [ApiVersion(2, 1)]
     public class IRCrarria : TerrariaPlugin
     {
-        private const string IRCurl = "";
-        private StandardIrcClient irc;
-        private IrcChannel ircChannel;
-        
         public override string Author => "lemon-sh";
         public override string Name => "IRCrarria";
         public override string Description => "IRC<->Terraria bridge that actually works with new TShock versions";
         public override Version Version => new Version(1, 0, 0, 0);
 
-        public IRCrarria(Main game) : base(game) { }
+        private static readonly string ConfigPath = Path.Combine(TShock.SavePath, "ircrarria.toml");
+
+        private Config _cfg;
+        private StandardIrcClient _irc;
+        private IrcChannel _ircChannel;
+
+        public IRCrarria(Main game) : base(game)
+        {
+            var configText = File.ReadAllText(ConfigPath);
+            _cfg = new Config(configText);
+        }
 
         public override void Initialize()
         {
             PlayerHooks.PlayerChat += OnChat;
-            irc = new StandardIrcClient();
-            irc.Registered += (sender, args) =>
+            _irc = new StandardIrcClient();
+            _irc.Registered += (isn, iarg) =>
             {
-                irc.LocalUser.JoinedChannel += (sender2, args2) =>
+                _irc.LocalUser.JoinedChannel += (jsn, jarg) =>
                 {
-                    ircChannel = args2.Channel;
+                    _ircChannel = jarg.Channel;
                 };
-                irc.Channels.Join("#main");
+                _irc.LocalUser.MessageReceived += (jsn, jarg) =>
+                {
+                    TShock.Utils.Broadcast($"[c/CE1F6A:[I]] [c/FF9A8C:{jarg.Source.Name}]: {jarg.Text}", Color.White);
+                };
+                _irc.Channels.Join(_cfg.Channel);
             };
-            irc.Connect(new Uri(IRCurl), new IrcUserRegistrationInfo {
-                NickName = "ircrarria", UserName = "ircrarria", RealName = "IRCrarria"
+            _irc.Connect(_cfg.Hostname, _cfg.Port, _cfg.UseSsl, new IrcUserRegistrationInfo {
+                NickName = _cfg.Nickname, UserName = _cfg.Username, RealName = _cfg.Username
             });
         }
 
         private void OnChat(PlayerChatEventArgs ev)
         {
-            irc.LocalUser.SendMessage(ircChannel, ev.RawText);
+            _irc.LocalUser.SendMessage(_ircChannel, $"<{ev.Player.Name}> {ev.RawText}");
+            TShock.Utils.Broadcast($"[c/28FFBF:[T]] [c/BCFFB9:{ev.Player.Name}]: {ev.RawText}", Color.White);
+            ev.Handled = true;
         }
 
         protected override void Dispose(bool disposing)
