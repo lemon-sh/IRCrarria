@@ -37,11 +37,11 @@ namespace IRCrarria
             {
                 _irc.LocalUser.JoinedChannel += (jsn, jarg) =>
                 {
+                    jarg.Channel.MessageReceived += (ksn, karg) =>
+                    {
+                        TShock.Utils.Broadcast($"[c/CE1F6A:[I]] [c/FF9A8C:{karg.Source.Name}]: {karg.Text}", Color.White);
+                    };
                     _ircChannel = jarg.Channel;
-                };
-                _irc.LocalUser.MessageReceived += (jsn, jarg) =>
-                {
-                    TShock.Utils.Broadcast($"[c/CE1F6A:[I]] [c/FF9A8C:{jarg.Source.Name}]: {jarg.Text}", Color.White);
                 };
                 _irc.Channels.Join(_cfg.Channel);
             };
