@@ -94,7 +94,22 @@ namespace IRCrarria
                     if (_ircChannel != null) return;
                     jarg.Channel.MessageReceived += (ksn, karg) =>
                     {
-                        TShock.Utils.Broadcast($"[c/CE1F6A:IRC] [c/FF9A8C:{karg.Source.Name}] {karg.Text.StripNonAscii()}", Color.White);
+                        var text = karg.Text.StripNonAscii();
+                        if (text.Equals(_cfg.PlayingCommand, StringComparison.OrdinalIgnoreCase))
+                        {
+                            _irc.LocalUser.SendMessage(_ircChannel,
+                                $"{TShock.Utils.GetActivePlayerCount()}/{TShock.Config.Settings.MaxSlots} online.");
+                            var playersOnline = new StringBuilder(256);
+                            foreach (var player in TShock.Players) if (player != null && player.Active)
+                            {
+                                playersOnline.Append(player.Name).Append("; ");
+                            }
+                            _irc.LocalUser.SendMessage(_ircChannel, playersOnline.ToString());
+                        }
+                        else
+                        {
+                            TShock.Utils.Broadcast($"[c/CE1F6A:IRC] [c/FF9A8C:{karg.Source.Name}] {text}", Color.White);
+                        }
                     };
                     _ircChannel = jarg.Channel;
                 };
@@ -108,9 +123,6 @@ namespace IRCrarria
     
     public static class StringExtensions
     {
-        public static string StripNonAscii(this string str)
-        {
-            return new string(str.Where(c => c > 31 && c < 127).ToArray());
-        }
+        public static string StripNonAscii(this string str) => new string(str.Where(c => c > 31 && c < 127).ToArray());
     }
 }

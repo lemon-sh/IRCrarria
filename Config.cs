@@ -8,11 +8,11 @@ namespace IRCrarria
         public string Hostname { get; }
         public int Port { get; }
         public bool UseSsl { get; }
-        
+
         public string Username { get; }
         public string Nickname { get; }
         public string Channel { get; }
-        
+        public string PlayingCommand { get; }
 
         public Config(string configText)
         {
@@ -25,6 +25,7 @@ namespace IRCrarria
             Username = (string) irctable["username"];
             Nickname = (string) irctable["nickname"];
             Channel = (string) irctable["channel"];
+            PlayingCommand = (string) irctable["playing_command"];
         }
     }
 }
