@@ -79,7 +79,6 @@ namespace IRCrarria
             var text = args.Message._text;
             if (Regex.IsMatch(text, "^.+ has (joined|left).$")
                 || text.Equals("Saving world...", StringComparison.OrdinalIgnoreCase)
-                || text.Equals("World saved.", StringComparison.OrdinalIgnoreCase)
                 || text.Contains("IRC") || text.Contains("TER")) return;
             _irc.LocalUser.SendMessage(_ircChannel, $"\x000311{text}");
         }
@@ -111,9 +110,7 @@ namespace IRCrarria
     {
         public static string StripNonAscii(this string str)
         {
-            return Encoding.ASCII.GetString(Encoding.Convert(Encoding.UTF8,
-                Encoding.GetEncoding(Encoding.ASCII.EncodingName, new EncoderReplacementFallback(string.Empty),
-                    new DecoderExceptionFallback()), Encoding.UTF8.GetBytes(str)));
+            return new string(str.Where(c => c > 31 && c < 127).ToArray());
         }
     }
 }
