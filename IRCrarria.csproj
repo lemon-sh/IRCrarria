@@ -47,11 +47,16 @@
     <Reference Include="TerrariaServer">
       <HintPath>lib\TerrariaServer.exe</HintPath>
     </Reference>
+    <Reference Include="Tomlyn, Version=0.1.2.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>packages\Tomlyn.0.1.2\lib\net45\Tomlyn.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="TShockAPI">
       <HintPath>lib\TShockAPI.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Config.cs" />
     <Compile Include="IRCrarria.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
