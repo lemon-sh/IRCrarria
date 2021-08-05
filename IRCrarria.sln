@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31515.178
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IRCrarria", "IRCrarria.csproj", "{0FCFEEB3-1BE3-4819-98DA-62D05288782F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0FCFEEB3-1BE3-4819-98DA-62D05288782F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0FCFEEB3-1BE3-4819-98DA-62D05288782F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0FCFEEB3-1BE3-4819-98DA-62D05288782F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0FCFEEB3-1BE3-4819-98DA-62D05288782F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {B7E1D1F5-14BC-4605-AA65-9034B6A415AB}
+	EndGlobalSection
+EndGlobal
