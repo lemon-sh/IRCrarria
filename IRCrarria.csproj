@@ -33,6 +33,11 @@
     <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="IrcDotNet, Version=0.6.1.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>packages\IrcDotNet.0.6.1\lib\net451\IrcDotNet.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="mscorlib" />
     <Reference Include="OTAPI">
       <HintPath>lib\OTAPI.dll</HintPath>
     </Reference>
@@ -49,6 +54,9 @@
   <ItemGroup>
     <Compile Include="IRCrarria.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
