@@ -1,6 +1,8 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using IrcDotNet;
 using Microsoft.Xna.Framework;
 using Terraria;
@@ -32,16 +34,62 @@ namespace IRCrarria
 
         public override void Initialize()
         {
-            // register hooks
             ServerApi.Hooks.ServerJoin.Register(this, OnJoin);
             ServerApi.Hooks.ServerLeave.Register(this, OnLeave);
             ServerApi.Hooks.ServerBroadcast.Register(this, OnBroadcast);
+            ServerApi.Hooks.GamePostInitialize.Register(this, OnPostInitialize);
             PlayerHooks.PlayerChat += OnChat;
+        }
 
-            // connect to the IRC server
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                ServerApi.Hooks.ServerJoin.Deregister(this, OnJoin);
+                ServerApi.Hooks.ServerLeave.Deregister(this, OnLeave);
+                ServerApi.Hooks.ServerBroadcast.Register(this, OnBroadcast);
+                ServerApi.Hooks.GamePostInitialize.Deregister(this, OnPostInitialize);
+                PlayerHooks.PlayerChat -= OnChat;
+                _irc.Disconnect();
+                _irc.Dispose();
+            }
+            base.Dispose(disposing);
+        }
+        
+        private void OnChat(PlayerChatEventArgs ev)
+        {
+            _irc.LocalUser.SendMessage(_ircChannel, $"\x00039<\x00038{ev.Player.Name}\x00039>\x3 {ev.RawText}");
+            TShock.Utils.Broadcast($"[c/28FFBF:TER] [c/BCFFB9:{ev.Player.Name}] {ev.RawText.StripNonAscii()}", Color.White);
+            ev.Handled = true;
+        }
+
+        private void OnJoin(JoinEventArgs args)
+        {
+            _irc.LocalUser.SendMessage(_ircChannel, $"\x00038{TShock.Players[args.Who].Name}\x00039 joined the game.");
+        }
+
+        private void OnLeave(LeaveEventArgs args)
+        {
+            _irc.LocalUser.SendMessage(_ircChannel, $"\x00038{TShock.Players[args.Who].Name}\x00034 left the game.");
+        }
+        
+        private void OnBroadcast(ServerBroadcastEventArgs args)
+        {
+            var text = args.Message._text;
+            // stupid code to remove some of the terraria broadcasts, I don't think it can be deuglyfied
+            if (Regex.IsMatch(text, "^.+ has (joined|left).$")
+                || text.Equals("Saving world...", StringComparison.OrdinalIgnoreCase)
+                || text.Equals("World saved.", StringComparison.OrdinalIgnoreCase)
+                || text.Contains("IRC") || text.Contains("TER")) return;
+            _irc.LocalUser.SendMessage(_ircChannel, $"\x000311{args.Message}");
+        }
+        
+        private void OnPostInitialize(EventArgs args)
+        {
             _irc = new StandardIrcClient();
             _irc.Registered += (isn, iarg) =>
             {
+                _irc.LocalUser.SetModes('B');
                 _irc.LocalUser.JoinedChannel += (jsn, jarg) =>
                 {
                     if (_ircChannel != null) return;
@@ -56,42 +104,6 @@ namespace IRCrarria
             _irc.Connect(_cfg.Hostname, _cfg.Port, _cfg.UseSsl, new IrcUserRegistrationInfo {
                 NickName = _cfg.Nickname, UserName = _cfg.Username, RealName = _cfg.Username
             });
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                ServerApi.Hooks.ServerJoin.Deregister(this, OnJoin);
-                ServerApi.Hooks.ServerBroadcast.Deregister(this, OnBroadcast);
-                ServerApi.Hooks.ServerLeave.Deregister(this, OnLeave);
-                PlayerHooks.PlayerChat -= OnChat;
-                _irc.Disconnect();
-                _irc.Dispose();
-            }
-            base.Dispose(disposing);
-        }
-        
-        private void OnChat(PlayerChatEventArgs ev)
-        {
-            _irc.LocalUser.SendMessage(_ircChannel, $"\x00039<\x00038{ev.Player.Name}\x00039>\x3 {ev.RawText}");
-            TShock.Utils.Broadcast($"[c/28FFBF:Terraria] [c/BCFFB9:{ev.Player.Name}] {ev.RawText.StripNonAscii()}", Color.White);
-            ev.Handled = true;
-        }
-
-        private void OnJoin(JoinEventArgs args)
-        {
-            _irc.LocalUser.SendMessage(_ircChannel, $"\x00038{args.Who}\x00039 joined the game.");
-        }
-
-        private void OnLeave(LeaveEventArgs args)
-        {
-            _irc.LocalUser.SendMessage(_ircChannel, $"\x00038{args.Who}\x00034 left the game.");
-        }
-        
-        private void OnBroadcast(ServerBroadcastEventArgs args)
-        {
-            _irc.LocalUser.SendMessage(_ircChannel, $"\x000311{args.Message}");
         }
     }
     
