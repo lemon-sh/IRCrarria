@@ -58,8 +58,9 @@ namespace IRCrarria
         
         private void OnChat(PlayerChatEventArgs ev)
         {
-            _irc.LocalUser.SendMessage(_ircChannel, $"\x00039<\x00038{ev.Player.Name}\x00039>\x3 {ev.RawText}");
-            TShock.Utils.Broadcast($"[c/28FFBF:TER] [c/BCFFB9:{ev.Player.Name}] {ev.RawText.StripNonAscii()}", Color.White);
+            var strippedText = ev.RawText.StripNonAscii();
+            _irc.LocalUser.SendMessage(_ircChannel, $"\x00039<\x00038{ev.Player.Name}\x00039>\x3 {strippedText}");
+            TShock.Utils.Broadcast($"[c/28FFBF:TER] [c/BCFFB9:{ev.Player.Name}] {strippedText}", Color.White);
             ev.Handled = true;
         }
 
@@ -76,12 +77,11 @@ namespace IRCrarria
         private void OnBroadcast(ServerBroadcastEventArgs args)
         {
             var text = args.Message._text;
-            // stupid code to remove some of the terraria broadcasts, I don't think it can be deuglyfied
             if (Regex.IsMatch(text, "^.+ has (joined|left).$")
                 || text.Equals("Saving world...", StringComparison.OrdinalIgnoreCase)
                 || text.Equals("World saved.", StringComparison.OrdinalIgnoreCase)
                 || text.Contains("IRC") || text.Contains("TER")) return;
-            _irc.LocalUser.SendMessage(_ircChannel, $"\x000311{args.Message}");
+            _irc.LocalUser.SendMessage(_ircChannel, $"\x000311{text}");
         }
         
         private void OnPostInitialize(EventArgs args)
