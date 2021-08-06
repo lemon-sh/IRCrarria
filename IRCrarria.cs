@@ -79,6 +79,7 @@ namespace IRCrarria
             var text = args.Message._text;
             if (Regex.IsMatch(text, "^.+ has (joined|left).$")
                 || text.Equals("Saving world...", StringComparison.OrdinalIgnoreCase)
+                || text.Equals("World saved.", StringComparison.OrdinalIgnoreCase)
                 || text.Contains("IRC") || text.Contains("TER")) return;
             _irc.LocalUser.SendMessage(_ircChannel, $"\x000311{text}");
         }
@@ -123,6 +124,8 @@ namespace IRCrarria
     
     public static class StringExtensions
     {
-        public static string StripNonAscii(this string str) => new string(str.Where(c => c > 31 && c < 127).ToArray());
+        private static readonly Regex StripRegex = new Regex(@"[^\u0020-\u007E]|(\x03(?:\d{1,2}(?:,\d{1,2})?)?)",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        public static string StripNonAscii(this string str) => StripRegex.Replace(str, string.Empty);
     }
 }
