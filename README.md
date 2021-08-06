@@ -14,6 +14,6 @@ ssl = false # change to 'true' if you need TLS
 username = "ircrarria"
 nickname = "ircrarria"
 channel = "#main" # IRCrarria can only use one IRC channel at a time
-playing_command = "t!playing" # IRC for listing players online
+playing_command = "t!playing" # IRC command for listing players online
 ```
 3. done lmao
