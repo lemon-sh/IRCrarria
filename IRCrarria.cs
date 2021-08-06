@@ -124,7 +124,8 @@ namespace IRCrarria
     
     public static class StringExtensions
     {
-        private static readonly Regex StripRegex = new Regex(@"[^\u0020-\u007E]|(\x03(?:\d{1,2}(?:,\d{1,2})?)?)",
+        private static readonly Regex StripRegex = new Regex(
+            @"\x03(?:\d{1,2}(?:,\d{1,2})?)|[^\u0020-\u007E]",
             RegexOptions.Compiled | RegexOptions.CultureInvariant);
         public static string StripNonAscii(this string str) => StripRegex.Replace(str, string.Empty);
     }
