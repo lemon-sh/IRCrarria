@@ -18,7 +18,7 @@ namespace IRCrarria
         public override string Author => "lemon-sh";
         public override string Name => "IRCrarria";
         public override string Description => "IRC<->Terraria bridge that actually works with new TShock versions";
-        public override Version Version => new Version(1, 0, 0, 0);
+        public override Version Version => typeof(IRCrarria).Assembly.GetName().Version;
 
         private static readonly string ConfigPath = Path.Combine(TShock.SavePath, "ircrarria.toml");
 
