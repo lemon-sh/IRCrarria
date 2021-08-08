@@ -46,9 +46,8 @@ namespace IRCrarria
             {
                 $"==--- {Name} {Version} ---==",
                 $"{_cfg.Prefix}help - display this helpscreen",
-                $"{_cfg.Prefix}playing - list people online on the server",
                 $"{_cfg.Prefix}serverinfo - display server info",
-                $"{_cfg.Prefix}uptime - display server uptime"
+                $"{_cfg.Prefix}uptime - display plugin uptime"
             };
         }
 
@@ -138,10 +137,7 @@ namespace IRCrarria
             switch (text.Substring(_cfg.Prefix.Length))
             {
                 case "help":
-                    foreach (var line in _helpText)
-                    {
-                        _irc.LocalUser.SendMessage(_ircChannel, line);
-                    }
+                    foreach (var line in _helpText) _irc.LocalUser.SendMessage(_ircChannel, line);
                     break;
                 case "serverinfo":
                     _irc.LocalUser.SendMessage(_ircChannel, $"TShock Version: {TShock.VersionNum}");
@@ -150,7 +146,7 @@ namespace IRCrarria
                     var playersOnline = new StringBuilder(256);
                     foreach (var player in TShock.Players.Where(player => player != null && player.Active))
                         playersOnline.Append(player.Name).Append("; ");
-                    _irc.LocalUser.SendMessage(_ircChannel, playersOnline.ToString());
+                    if (playersOnline.Length > 0) _irc.LocalUser.SendMessage(_ircChannel, playersOnline.ToString());
                     break;
                 case "uptime":
                     var elapsed = DateTime.Now.Subtract(StartTime);
