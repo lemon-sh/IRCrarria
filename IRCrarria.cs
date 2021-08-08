@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -15,12 +16,14 @@ namespace IRCrarria
     [ApiVersion(2, 1)]
     public class IRCrarria : TerrariaPlugin
     {
-        public override string Author => "lemon-sh";
-        public override string Name => "IRCrarria";
-        public override string Description => "IRC<->Terraria bridge that actually works with new TShock versions";
-        public override Version Version => typeof(IRCrarria).Assembly.GetName().Version;
+        public sealed override string Author => "lemon-sh";
+        public sealed override string Name => "IRCrarria";
+        public sealed override string Description => "IRC<->Terraria bridge that actually works with new TShock versions";
+        public sealed override Version Version => typeof(IRCrarria).Assembly.GetName().Version;
 
+        private readonly IEnumerable<string> _helpText;
         private static readonly string ConfigPath = Path.Combine(TShock.SavePath, "ircrarria.toml");
+        private static readonly DateTime StartTime = DateTime.Now;
         
         private static readonly Regex JoinLeftRegex = new Regex(@"^.+ has (joined|left).$",
             RegexOptions.Compiled | RegexOptions.CultureInvariant);
@@ -35,6 +38,14 @@ namespace IRCrarria
         {
             var configText = File.ReadAllText(ConfigPath);
             _cfg = new Config(configText);
+            _helpText = new List<string>
+            {
+                $"==--- {Name} {Version} ---==",
+                $"{_cfg.Prefix}help - display this helpscreen",
+                $"{_cfg.Prefix}playing - list people online on the server",
+                $"{_cfg.Prefix}serverinfo - display server info",
+                $"{_cfg.Prefix}uptime - display server uptime"
+            };
         }
 
         public override void Initialize()
@@ -94,30 +105,24 @@ namespace IRCrarria
             _irc = new StandardIrcClient();
             _irc.Registered += (isn, iarg) =>
             {
+                // this is where LocalUser becomes available
                 _irc.LocalUser.SetModes('B');
                 _irc.LocalUser.JoinedChannel += (jsn, jarg) =>
                 {
                     if (_ircChannel != null) return;
-                    jarg.Channel.MessageReceived += (ksn, karg) =>
+                    _ircChannel = jarg.Channel;
+                    _ircChannel.MessageReceived += (ksn, karg) =>
                     {
                         var text = karg.Text.StripNonAscii();
-                        if (text.Equals(_cfg.PlayingCommand, StringComparison.OrdinalIgnoreCase))
+                        if (text.Equals(_cfg.Prefix, StringComparison.OrdinalIgnoreCase))
                         {
-                            _irc.LocalUser.SendMessage(_ircChannel,
-                                $"{TShock.Utils.GetActivePlayerCount()}/{TShock.Config.Settings.MaxSlots} online.");
-                            var playersOnline = new StringBuilder(256);
-                            foreach (var player in TShock.Players) if (player != null && player.Active)
-                            {
-                                playersOnline.Append(player.Name).Append("; ");
-                            }
-                            _irc.LocalUser.SendMessage(_ircChannel, playersOnline.ToString());
+                            
                         }
                         else
                         {
                             TShock.Utils.Broadcast($"[c/CE1F6A:IRC] [c/FF9A8C:{karg.Source.Name}] {text}", Color.White);
                         }
                     };
-                    _ircChannel = jarg.Channel;
                 };
                 _irc.Channels.Join(_cfg.Channel);
             };
@@ -125,8 +130,46 @@ namespace IRCrarria
                 NickName = _cfg.Nickname, UserName = _cfg.Username, RealName = _cfg.Username
             });
         }
+
+        // ideas for commands "inspired" by terracord (https://github.com/FragLand/terracord)
+        private void ExecuteCommand(string text)
+        {
+            if (!text.StartsWith(_cfg.Prefix, StringComparison.Ordinal)) return;
+            switch (text.Substring(_cfg.Prefix.Length))
+            {
+                case "help":
+                    foreach (var line in _helpText)
+                    {
+                        _irc.LocalUser.SendMessage(_ircChannel, line);
+                    }
+                    break;
+                case "playing":
+                    _irc.LocalUser.SendMessage(_ircChannel,
+                        $"{TShock.Utils.GetActivePlayerCount()}/{TShock.Config.Settings.MaxSlots} online.");
+                    var playersOnline = new StringBuilder(256);
+                    foreach (var player in TShock.Players) if (player != null && player.Active)
+                    {
+                        playersOnline.Append(player.Name).Append("; ");
+                    }
+                    _irc.LocalUser.SendMessage(_ircChannel, playersOnline.ToString());
+                    break;
+                case "serverinfo":
+                    _irc.LocalUser.SendMessage(_ircChannel, $"Server Name: {TShock.Config.Settings.ServerName}");
+                    _irc.LocalUser.SendMessage(_ircChannel, $"Players: {TShock.Utils.GetActivePlayerCount()}/{TShock.Config.Settings.MaxSlots}");
+                    _irc.LocalUser.SendMessage(_ircChannel, $"TShock Version: {TShock.VersionNum}");
+                    break;
+                case "uptime":
+                    var elapsed = DateTime.Now.Subtract(StartTime);
+                    _irc.LocalUser.SendMessage(_ircChannel,
+                        $"Plugin uptime: {elapsed.Days}d {elapsed.Hours}h {elapsed.Minutes}min {elapsed.Seconds}s");
+                    break;
+                default:
+                    _irc.LocalUser.SendMessage(_ircChannel, "Invalid command!");
+                    break;
+            }
+        }
     }
-    
+
     public static class StringExtensions
     {
         public static string StripNonAscii(this string str) =>

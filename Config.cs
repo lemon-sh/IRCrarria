@@ -12,7 +12,7 @@ namespace IRCrarria
         public string Username { get; }
         public string Nickname { get; }
         public string Channel { get; }
-        public string PlayingCommand { get; }
+        public string Prefix { get; }
 
         public Config(string configText)
         {
@@ -25,7 +25,7 @@ namespace IRCrarria
             Username = (string) irctable["username"];
             Nickname = (string) irctable["nickname"];
             Channel = (string) irctable["channel"];
-            PlayingCommand = (string) irctable["playing_command"];
+            Prefix = (string) irctable["prefix"];
         }
     }
 }

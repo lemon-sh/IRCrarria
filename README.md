@@ -15,6 +15,6 @@ ssl = false # important! change to 'true' if you need TLS
 username = "ircrarria"
 nickname = "ircrarria"
 channel = "#terraria"
-playing_command = "t!playing" # IRC command for listing players online
+prefix = "t!" # IRC command prefix
 ```
 3. Done
