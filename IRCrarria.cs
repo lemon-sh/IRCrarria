@@ -21,6 +21,11 @@ namespace IRCrarria
         public override Version Version => typeof(IRCrarria).Assembly.GetName().Version;
 
         private static readonly string ConfigPath = Path.Combine(TShock.SavePath, "ircrarria.toml");
+        
+        private static readonly Regex JoinLeftRegex = new Regex(@"^.+ has (joined|left).$",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        public static readonly Regex StripRegex = new Regex(@"\x03(?:\d{1,2}(?:,\d{1,2})?)|[^\u0020-\u007E]",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
         private readonly Config _cfg;
         private StandardIrcClient _irc;
@@ -77,7 +82,7 @@ namespace IRCrarria
         private void OnBroadcast(ServerBroadcastEventArgs args)
         {
             var text = args.Message._text;
-            if (Regex.IsMatch(text, "^.+ has (joined|left).$")
+            if (JoinLeftRegex.IsMatch(text)
                 || text.Equals("Saving world...", StringComparison.OrdinalIgnoreCase)
                 || text.Equals("World saved.", StringComparison.OrdinalIgnoreCase)
                 || text.Contains("IRC") || text.Contains("TER")) return;
@@ -124,9 +129,7 @@ namespace IRCrarria
     
     public static class StringExtensions
     {
-        private static readonly Regex StripRegex = new Regex(
-            @"\x03(?:\d{1,2}(?:,\d{1,2})?)|[^\u0020-\u007E]",
-            RegexOptions.Compiled | RegexOptions.CultureInvariant);
-        public static string StripNonAscii(this string str) => StripRegex.Replace(str, string.Empty);
+        public static string StripNonAscii(this string str) =>
+            IRCrarria.StripRegex.Replace(str, string.Empty);
     }
 }
