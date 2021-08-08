@@ -143,19 +143,14 @@ namespace IRCrarria
                         _irc.LocalUser.SendMessage(_ircChannel, line);
                     }
                     break;
-                case "playing":
+                case "serverinfo":
+                    _irc.LocalUser.SendMessage(_ircChannel, $"TShock Version: {TShock.VersionNum}");
                     _irc.LocalUser.SendMessage(_ircChannel,
-                        $"{TShock.Utils.GetActivePlayerCount()}/{TShock.Config.Settings.MaxSlots} online.");
+                        $"Players online: [{TShock.Utils.GetActivePlayerCount()}/{TShock.Config.Settings.MaxSlots}]");
                     var playersOnline = new StringBuilder(256);
                     foreach (var player in TShock.Players.Where(player => player != null && player.Active))
                         playersOnline.Append(player.Name).Append("; ");
                     _irc.LocalUser.SendMessage(_ircChannel, playersOnline.ToString());
-                    break;
-                case "serverinfo":
-                    _irc.LocalUser.SendMessage(_ircChannel, $"Server Name: {TShock.Config.Settings.ServerName}");
-                    _irc.LocalUser.SendMessage(_ircChannel,
-                        $"Players: {TShock.Utils.GetActivePlayerCount()}/{TShock.Config.Settings.MaxSlots}");
-                    _irc.LocalUser.SendMessage(_ircChannel, $"TShock Version: {TShock.VersionNum}");
                     break;
                 case "uptime":
                     var elapsed = DateTime.Now.Subtract(StartTime);
