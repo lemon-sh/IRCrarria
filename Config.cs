@@ -1,4 +1,7 @@
-﻿using Tomlyn;
+﻿using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using Tomlyn;
 using Tomlyn.Model;
 
 namespace IRCrarria
@@ -13,6 +16,7 @@ namespace IRCrarria
         public string Nickname { get; }
         public string Channel { get; }
         public string Prefix { get; }
+        public IEnumerable<KeyValuePair<string, object>> ExtraDetails { get; }
 
         public Config(string configText)
         {
@@ -26,6 +30,8 @@ namespace IRCrarria
             Nickname = (string) irctable["nickname"];
             Channel = (string) irctable["channel"];
             Prefix = (string) irctable["prefix"];
+            if (!document.ContainsKey("server_details")) return;
+            ExtraDetails = (TomlTable) document["server_details"];
         }
     }
 }

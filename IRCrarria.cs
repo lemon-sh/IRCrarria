@@ -141,6 +141,12 @@ namespace IRCrarria
                     break;
                 case "serverinfo":
                     _irc.LocalUser.SendMessage(_ircChannel, $"TShock Version: {TShock.VersionNum}");
+                    if (_cfg.ExtraDetails != null)
+                    {
+                        foreach (var detail in _cfg.ExtraDetails)
+                            if (detail.Value is string value)
+                                _irc.LocalUser.SendMessage(_ircChannel, $"{detail.Key}: {value}");
+                    }
                     _irc.LocalUser.SendMessage(_ircChannel,
                         $"Players online: [{TShock.Utils.GetActivePlayerCount()}/{TShock.Config.Settings.MaxSlots}]");
                     var playersOnline = new StringBuilder(256);
