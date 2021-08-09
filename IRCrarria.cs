@@ -96,11 +96,13 @@ namespace IRCrarria
 
         private void OnBroadcast(ServerBroadcastEventArgs args)
         {
-            var text = args.Message._text;
-            if (JoinLeftRegex.IsMatch(text)
+            var text = args.Message.ToString();
+            if (text.StartsWith("[c/CE1F6A:IRC]", StringComparison.Ordinal)
+                || text.StartsWith("[c/28FFBF:TER]", StringComparison.Ordinal)
+                || JoinLeftRegex.IsMatch(text)
                 || text.Equals("Saving world...", StringComparison.OrdinalIgnoreCase)
                 || text.Equals("World saved.", StringComparison.OrdinalIgnoreCase)
-                || text.Contains("IRC") || text.Contains("TER")) return;
+            ) return;
             _irc.LocalUser.SendMessage(_ircChannel, $"\x000311{text}");
         }
 
