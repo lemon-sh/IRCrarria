@@ -47,7 +47,7 @@ namespace IRCrarria
                 $"==--- {Name} {Version} ---==",
                 $"{_cfg.Prefix}help - display this helpscreen",
                 $"{_cfg.Prefix}serverinfo - display server info",
-                $"{_cfg.Prefix}uptime - display plugin uptime"
+                $"{_cfg.Prefix}playing - list online players"
             };
         }
 
@@ -142,6 +142,7 @@ namespace IRCrarria
                     foreach (var line in _helpText) _irc.LocalUser.SendMessage(_ircChannel, line);
                     break;
                 case "serverinfo":
+                    _irc.LocalUser.SendMessage(_ircChannel, "==--- Server Information ---==");
                     _irc.LocalUser.SendMessage(_ircChannel, $"TShock Version: {TShock.VersionNum}");
                     if (_cfg.ExtraDetails != null)
                     {
@@ -149,17 +150,18 @@ namespace IRCrarria
                             if (detail.Value is string value)
                                 _irc.LocalUser.SendMessage(_ircChannel, $"{detail.Key}: {value}");
                     }
+                    var elapsed = DateTime.Now.Subtract(StartTime);
                     _irc.LocalUser.SendMessage(_ircChannel,
-                        $"Players online: [{TShock.Utils.GetActivePlayerCount()}/{TShock.Config.Settings.MaxSlots}]");
+                        $"Uptime: {elapsed.Days}d {elapsed.Hours}h {elapsed.Minutes}min {elapsed.Seconds}s");
+                    _irc.LocalUser.SendMessage(_ircChannel, "==--------------------------==");
+                    break;
+                case "playing":
+                    _irc.LocalUser.SendMessage(_ircChannel,
+                        $"[{TShock.Utils.GetActivePlayerCount()}/{TShock.Config.Settings.MaxSlots}] players.");
                     var playersOnline = new StringBuilder(256);
                     foreach (var player in TShock.Players.Where(player => player != null && player.Active))
                         playersOnline.Append(player.Name).Append("; ");
                     if (playersOnline.Length > 0) _irc.LocalUser.SendMessage(_ircChannel, playersOnline.ToString());
-                    break;
-                case "uptime":
-                    var elapsed = DateTime.Now.Subtract(StartTime);
-                    _irc.LocalUser.SendMessage(_ircChannel,
-                        $"Plugin uptime: {elapsed.Days}d {elapsed.Hours}h {elapsed.Minutes}min {elapsed.Seconds}s");
                     break;
                 default:
                     _irc.LocalUser.SendMessage(_ircChannel, "Invalid command!");
