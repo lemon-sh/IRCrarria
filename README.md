@@ -19,5 +19,13 @@ username = "ircrarria"
 nickname = "ircrarria"
 channel = "#terraria"
 prefix = "t!" # IRC command prefix
+
+# Additional server info that will be shown when the 'serverinfo' command is used
+# You can specify any keys here (the only requirement is that the value has to be a string)
+# This section is optional and can be omitted.
+[server_details]
+"Server name" = "Lemon's Terraria Server"
+"IP & Port" = "127.0.0.1:7777"
+"this server is" = "very cool"
 ```
 3. Done
