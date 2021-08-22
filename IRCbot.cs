@@ -181,14 +181,12 @@ namespace IRCrarria
                 _irc = new TcpClient(Server, Port);
                 if (Ssl)
                 {
-                    // we goin' TLS
                     _sslStream = GetSslStream(_irc.GetStream(), Server);
                     _reader = new StreamReader(_sslStream);
                     _writer = new StreamWriter(_sslStream);
                 }
                 else
                 {
-                    // we goin' TCP
                     _reader = new StreamReader(_irc.GetStream());
                     _writer = new StreamWriter(_irc.GetStream());
                 }
@@ -200,13 +198,9 @@ namespace IRCrarria
                 while ((inputLine = _reader.ReadLine()) != null)
                 {
                     var message = ParseIrc(inputLine);
-#if DEBUG
-                    Console.WriteLine("<- " + inputLine);
-#endif
                     if (message == null)
                     {
-                        Console.WriteLine($"IRCrarria Warning: Malformed IRC message - {inputLine}");
-                        continue;
+                        throw new IOException($"IRC Server sent malformed message: {inputLine}");
                     }
 
                     switch (message.Command)

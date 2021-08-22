@@ -27,8 +27,7 @@ connect_commands = [
   "PRIVMSG NickServ :identify topsecretpwd"
 ]
 
-# Additional server info that will be shown when the 'serverinfo' command is used
-# This section is optional and can be omitted.
+# OPTIONAL: Additional server info that will be shown when the 'serverinfo' command is used
 [server_details]
 "Server name" = "Lemon's Terraria Server"
 "IP & Port" = "127.0.0.1:7777"
