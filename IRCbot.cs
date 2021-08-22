@@ -5,12 +5,16 @@ using System.IO;
 using System.Linq;
 using System.Net.Security;
 using System.Net.Sockets;
-using System.Threading;
 
 namespace IRCrarria
 {
     public class IRCbot
     {
+        private enum BotState
+        {
+            Dead, Starting, Running
+        }
+        
         private string Server { get; }
         private int Port { get; }
         private string Username { get; }
@@ -18,9 +22,8 @@ namespace IRCrarria
         private bool Ssl { get; }
         private bool IgnoreSslCert { get; }
 
-        private volatile bool _dead;
-        private StreamWriter _writer;
-        private Mutex _writerLock;
+        private volatile BotState _state;
+        private TextWriter _writer;
         private TcpClient _irc;
         private SslStream _sslStream;
         private StreamReader _reader;
@@ -45,30 +48,28 @@ namespace IRCrarria
             Nick = nick;
             Ssl = ssl;
             IgnoreSslCert = ignoreSslCert;
-            _dead = true;
+            _state = BotState.Dead;
         }
 
         private void EnsureAlive()
         {
-            // this actually made me laugh
-            if (_dead) throw new InvalidOperationException("This bot is dead.");
+            if (_state != BotState.Running) throw new InvalidOperationException("This bot is dead.");
         }
         
         private void KillAndDispose()
         {
-            if (_dead) return;
-            _dead = true;
+            if (_state == BotState.Dead) return;
+            _state = BotState.Dead;
             _sslStream?.Dispose(); _sslStream = null;
             _irc?.Dispose(); _irc = null;
             _reader?.Dispose(); _reader = null;
             _writer?.Dispose(); _writer = null;
-            _writerLock?.Dispose(); _writerLock = null;
         }
-
-        // this is not the cleanest method, but I got no idea on how to cancel the ReadLine();
+        
+        // todo: do proper graceful shutdown
         public void RequestDisconnect()
         {
-            if (!_dead) SyncWriteStream("QUIT");
+            if (_state == BotState.Running) SyncWriteStream("QUIT");
         }
         
         public void SendMessage(string target, string message)
@@ -156,13 +157,8 @@ namespace IRCrarria
 
         private void SyncWriteStream(string input)
         {
-            _writerLock.WaitOne(-1);
-#if DEBUG
-            Console.WriteLine("-> " + input);
-#endif
             _writer.WriteLine(input);
             _writer.Flush();
-            _writerLock.ReleaseMutex();
         }
 
         private string GetAuthor(string prefix)
@@ -173,12 +169,15 @@ namespace IRCrarria
         
         public void Start()
         {
-            if (!_dead) throw new InvalidOperationException("This bot is already running.");
+            if (_state != BotState.Dead) throw new InvalidOperationException("This bot is already running.");
             try
             {
-                _dead = false;
-                _writerLock = new Mutex();
-                _irc = new TcpClient(Server, Port);
+                _state = BotState.Starting;
+                _irc = new TcpClient();
+                if (!_irc.ConnectAsync(Server, Port).Wait(10000))
+                {
+                    throw new TimeoutException("IRC connection timeout");
+                }
                 if (Ssl)
                 {
                     _sslStream = GetSslStream(_irc.GetStream(), Server);
@@ -190,6 +189,9 @@ namespace IRCrarria
                     _reader = new StreamReader(_irc.GetStream());
                     _writer = new StreamWriter(_irc.GetStream());
                 }
+
+                _writer = TextWriter.Synchronized(_writer);
+                _state = BotState.Running;
                 
                 SyncWriteStream($"NICK {Nick}");
                 SyncWriteStream($"USER {Username} 0 * :{Username}");
