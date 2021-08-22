@@ -5,27 +5,31 @@ A very simple IRC<->Terraria chat bridge for TShock. Tested with Mono 6.12 on Ar
 **Important: After updating, make sure that your config file structure matches the config shown below to avoid errors! (it changes sometimes)**
 <h2 align="center">Installation and configuration</h2>
 
-1. Copy the assemblies `IRCrarria.dll`, `IrcDotNet.dll` and `Tomlyn.dll` to the *ServerPlugins* directory in your TShock install
+1. Copy the assemblies `IRCrarria.dll` and `Tomlyn.dll` to the *ServerPlugins* directory in your TShock install
 2. Create `ircrarria.toml` in your TShock configuration directory (`<tshock installation dir>/tshock`) with the following contents:
 ```toml
 [host]
 hostname = "<IRC server hostname>"
 port = 6667
-ssl = false # important! change to 'true' if you need TLS
+ssl = false  # change to 'true' if you need TLS
+skip_cert_validation = true  # DANGEROUS! Use only when absolutely required.
 
 [irc]
-# customize to your needs
 username = "ircrarria"
 nickname = "ircrarria"
 channel = "#terraria"
-prefix = "t!" # IRC command prefix
+prefix = "t!"  # IRC command prefix
+
+# OPTIONAL: specify *raw* IRC commands to run after the bot registers
+connect_commands = [
+  "PRIVMSG NickServ :identify topsecretpwd"
+]
 
 # Additional server info that will be shown when the 'serverinfo' command is used
-# You can specify any keys here (the only requirement is that the value has to be a string)
 # This section is optional and can be omitted.
 [server_details]
 "Server name" = "Lemon's Terraria Server"
 "IP & Port" = "127.0.0.1:7777"
 "this server is" = "very cool"
 ```
-3. Done
+3. Done (remember to adjust the config file to your needs)
