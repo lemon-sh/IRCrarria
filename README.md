@@ -12,9 +12,9 @@ A very simple IRC<->Terraria chat bridge for TShock. Tested with Mono 6.12 on Ar
 ```toml
 [host]
 hostname = "<IRC server hostname>"
-port = 6667
-ssl = false  # change to 'true' if you need TLS
-skip_cert_validation = true  # DANGEROUS! Use only when absolutely required.
+port = 6697
+ssl = true  # change to 'true' if you need TLS
+skip_cert_validation = false  # DANGEROUS! Use only when absolutely required.
 
 [irc]
 username = "ircrarria"
