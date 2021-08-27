@@ -86,12 +86,14 @@ namespace IRCrarria
 
         private void OnJoin(JoinEventArgs args)
         {
-            _bot.SendMessage(_cfg.Channel, $"\x00038{TShock.Players[args.Who].Name}\x00039 joined the game.");
+            var player = TShock.Players[args.Who];
+            if (player != null) _bot.SendMessage(_cfg.Channel, $"\x00038{player.Name}\x00039 joined the game.");
         }
 
         private void OnLeave(LeaveEventArgs args)
         {
-            _bot.SendMessage(_cfg.Channel, $"\x00038{TShock.Players[args.Who].Name}\x00034 left the game.");
+            var player = TShock.Players[args.Who];
+            if (player != null) _bot.SendMessage(_cfg.Channel, $"\x00038{player.Name}\x00034 left the game.");
         }
 
         private void OnBroadcast(ServerBroadcastEventArgs args)
