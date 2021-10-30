@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using IrcDotNet;
+using System.Threading;
 using Microsoft.Xna.Framework;
 using Terraria;
 using TerrariaApi.Server;
@@ -18,25 +18,22 @@ namespace IRCrarria
     {
         public sealed override string Author => "lemon-sh";
         public sealed override string Name => "IRCrarria";
-
         public sealed override string Description =>
             "IRC<->Terraria bridge that actually works with new TShock versions";
-
         public sealed override Version Version => typeof(IRCrarria).Assembly.GetName().Version;
 
         private readonly IEnumerable<string> _helpText;
         private static readonly string ConfigPath = Path.Combine(TShock.SavePath, "ircrarria.toml");
         private static readonly DateTime StartTime = DateTime.Now;
 
-        private static readonly Regex JoinLeftRegex = new Regex(@"^.+ has (joined|left).$",
+        private static readonly Regex JoinLeftRegex = new(@"^.+ has (joined|left).$",
             RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
-        public static readonly Regex StripRegex = new Regex(@"\x03(?:\d{1,2}(?:,\d{1,2})?)|[^\u0020-\u007E]",
+        public static readonly Regex StripRegex = new(@"\x03(?:\d{1,2}(?:,\d{1,2})?)|[^\u0020-\u007E]",
             RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
         private readonly Config _cfg;
-        private StandardIrcClient _irc;
-        private IrcChannel _ircChannel;
+        private IRCbot _bot;
 
         public IRCrarria(Main game) : base(game)
         {
@@ -69,8 +66,11 @@ namespace IRCrarria
                 ServerApi.Hooks.ServerBroadcast.Register(this, OnBroadcast);
                 ServerApi.Hooks.GamePostInitialize.Deregister(this, OnPostInitialize);
                 PlayerHooks.PlayerChat -= OnChat;
-                _irc.Disconnect();
-                _irc.Dispose();
+                _bot.Welcome -= OnIrcWelcome;
+                _bot.Message -= OnIrcMessage;
+                _bot.Join -= OnIrcJoin;
+                _bot.Leave -= OnIrcLeave;
+                _bot.RequestDisconnect();
             }
 
             base.Dispose(disposing);
@@ -79,19 +79,21 @@ namespace IRCrarria
         private void OnChat(PlayerChatEventArgs ev)
         {
             var strippedText = ev.RawText.StripNonAscii();
-            _irc.LocalUser.SendMessage(_ircChannel, $"\x00039<\x00038{ev.Player.Name}\x00039>\x3 {strippedText}");
+            _bot.SendMessage(_cfg.Channel, $"\x00039<\x00038{ev.Player.Name}\x00039>\x3 {strippedText}");
             TShock.Utils.Broadcast($"[c/28FFBF:TER] [c/BCFFB9:{ev.Player.Name}] {strippedText}", Color.White);
             ev.Handled = true;
         }
 
         private void OnJoin(JoinEventArgs args)
         {
-            _irc.LocalUser.SendMessage(_ircChannel, $"\x00038{TShock.Players[args.Who].Name}\x00039 joined the game.");
+            var player = TShock.Players[args.Who];
+            if (player != null) _bot.SendMessage(_cfg.Channel, $"\x00038{player.Name}\x00039 joined the game.");
         }
 
         private void OnLeave(LeaveEventArgs args)
         {
-            _irc.LocalUser.SendMessage(_ircChannel, $"\x00038{TShock.Players[args.Who].Name}\x00034 left the game.");
+            var player = TShock.Players[args.Who];
+            if (player != null) _bot.SendMessage(_cfg.Channel, $"\x00038{player.Name}\x00034 left the game.");
         }
 
         private void OnBroadcast(ServerBroadcastEventArgs args)
@@ -103,33 +105,44 @@ namespace IRCrarria
                 || text.Equals("Saving world...", StringComparison.OrdinalIgnoreCase)
                 || text.Equals("World saved.", StringComparison.OrdinalIgnoreCase)
             ) return;
-            _irc.LocalUser.SendMessage(_ircChannel, $"\x000311{text}");
+            _bot.SendMessage(_cfg.Channel, $"\x000311{text}");
         }
 
         private void OnPostInitialize(EventArgs args)
         {
-            _irc = new StandardIrcClient();
-            _irc.Registered += (isn, iarg) =>
-            {
-                // this is where LocalUser becomes available
-                _irc.LocalUser.SetModes('B');
-                _irc.LocalUser.JoinedChannel += (jsn, jarg) =>
-                {
-                    if (_ircChannel != null) return;
-                    _ircChannel = jarg.Channel;
-                    _ircChannel.MessageReceived += (ksn, karg) =>
-                    {
-                        var text = karg.Text.StripNonAscii();
-                        if (ExecuteCommand(text)) return;
-                        TShock.Utils.Broadcast($"[c/CE1F6A:IRC] [c/FF9A8C:{karg.Source.Name}] {text}", Color.White);
-                    };
-                };
-                _irc.Channels.Join(_cfg.Channel);
-            };
-            _irc.Connect(_cfg.Hostname, _cfg.Port, _cfg.UseSsl, new IrcUserRegistrationInfo
-            {
-                NickName = _cfg.Nickname, UserName = _cfg.Username, RealName = _cfg.Username
-            });
+            _bot = new IRCbot(_cfg.Hostname, _cfg.Port, _cfg.Username, _cfg.Nickname, _cfg.UseSsl, _cfg.SkipCertValidation);
+            _bot.Welcome += OnIrcWelcome;
+            _bot.Message += OnIrcMessage;
+            _bot.Join += OnIrcJoin;
+            _bot.Leave += OnIrcLeave;
+            new Thread(_ => _bot.Start()).Start();
+        }
+
+        private void OnIrcWelcome(IRCbot bot)
+        {
+            bot.SetSelfMode("+B");
+            if (_cfg.ConnectCommands != null)
+                foreach (var command in _cfg.ConnectCommands)
+                    bot.ExecuteRaw(command);
+
+            bot.JoinChannel(_cfg.Channel);
+        }
+
+        private void OnIrcMessage(IRCbot _, string source, string author, string content)
+        {
+            if (source != _cfg.Channel) return;
+            var text = content.StripNonAscii();
+            if (!ExecuteCommand(text)) TShock.Utils.Broadcast($"[c/CE1F6A:IRC] [c/FF9A8C:{author}] {text}", Color.White);
+        }
+
+        private void OnIrcLeave(IRCbot _, string channel, string user)
+        {
+            TShock.Utils.Broadcast($"[c/CE1F6A:IRC] [c/FF9A8C:{user} left {channel}]", Color.White);
+        }
+
+        private void OnIrcJoin(IRCbot _, string channel, string user)
+        {
+            TShock.Utils.Broadcast($"[c/CE1F6A:IRC] [c/28FFBF:{user} joined {channel}]", Color.White);
         }
 
         // ideas for commands "inspired" by terracord (https://github.com/FragLand/terracord)
@@ -139,32 +152,32 @@ namespace IRCrarria
             switch (text.Substring(_cfg.Prefix.Length))
             {
                 case "help":
-                    foreach (var line in _helpText) _irc.LocalUser.SendMessage(_ircChannel, line);
+                    foreach (var line in _helpText) _bot.SendMessage(_cfg.Channel, line);
                     break;
                 case "serverinfo":
-                    _irc.LocalUser.SendMessage(_ircChannel, "==--- Server Information ---==");
-                    _irc.LocalUser.SendMessage(_ircChannel, $"TShock Version: {TShock.VersionNum}");
+                    _bot.SendMessage(_cfg.Channel, "==--- Server Information ---==");
+                    _bot.SendMessage(_cfg.Channel, $"TShock Version: {TShock.VersionNum}");
                     if (_cfg.ExtraDetails != null)
                     {
                         foreach (var detail in _cfg.ExtraDetails)
                             if (detail.Value is string value)
-                                _irc.LocalUser.SendMessage(_ircChannel, $"{detail.Key}: {value}");
+                                _bot.SendMessage(_cfg.Channel, $"{detail.Key}: {value}");
                     }
                     var elapsed = DateTime.Now.Subtract(StartTime);
-                    _irc.LocalUser.SendMessage(_ircChannel,
+                    _bot.SendMessage(_cfg.Channel,
                         $"Uptime: {elapsed.Days}d {elapsed.Hours}h {elapsed.Minutes}min {elapsed.Seconds}s");
-                    _irc.LocalUser.SendMessage(_ircChannel, "==--------------------------==");
+                    _bot.SendMessage(_cfg.Channel, "==--------------------------==");
                     break;
                 case "playing":
-                    _irc.LocalUser.SendMessage(_ircChannel,
+                    _bot.SendMessage(_cfg.Channel,
                         $"[{TShock.Utils.GetActivePlayerCount()}/{TShock.Config.Settings.MaxSlots}] players.");
                     var playersOnline = new StringBuilder(256);
-                    foreach (var player in TShock.Players.Where(player => player != null && player.Active))
+                    foreach (var player in TShock.Players.Where(player => player is {Active: true}))
                         playersOnline.Append(player.Name).Append("; ");
-                    if (playersOnline.Length > 0) _irc.LocalUser.SendMessage(_ircChannel, playersOnline.ToString());
+                    if (playersOnline.Length > 0) _bot.SendMessage(_cfg.Channel, playersOnline.ToString());
                     break;
                 default:
-                    _irc.LocalUser.SendMessage(_ircChannel, "Invalid command!");
+                    _bot.SendMessage(_cfg.Channel, "Invalid command!");
                     break;
             }
             return true;
