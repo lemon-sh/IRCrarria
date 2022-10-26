@@ -1,7 +1,7 @@
 <h1 align="center">IRCrarria</h1>
 A very simple IRC<->Terraria chat bridge for TShock. Tested with Mono 6.12 on Arch Linux and .NET Framework 4.6.1 on Windows (using TShock 4.5.5).
 
-[<h3 align="center">Download link (1.2.0)</h3>](https://files.catbox.moe/70d6vl.zip)
+<h3 align="center"><a href="https://files.catbox.moe/70d6vl.zip">Download link (1.2.0)</a></h3>
 <p align="center">Pre-releases are available as GitHub Releases</p>
 
 **Important: After updating, make sure that your config file structure matches the config shown below to avoid errors! (it changes sometimes)**
