@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using Tomlyn;
+﻿using Tomlyn;
 using Tomlyn.Model;
 
 namespace IRCrarria
@@ -15,8 +13,8 @@ namespace IRCrarria
         public string Nickname { get; }
         public string Channel { get; }
         public string Prefix { get; }
-        public IEnumerable<KeyValuePair<string, object>> ExtraDetails { get; }
-        public IEnumerable<string> ConnectCommands { get; }
+        public IEnumerable<KeyValuePair<string, object>>? ExtraDetails { get; }
+        public IEnumerable<string>? ConnectCommands { get; }
 
         public Config(string configText)
         {

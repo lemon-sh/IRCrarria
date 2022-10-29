@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
+﻿using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading;
 using Microsoft.Xna.Framework;
 using Terraria;
 using TerrariaApi.Server;
@@ -20,7 +15,7 @@ namespace IRCrarria
         public sealed override string Name => "IRCrarria";
         public sealed override string Description =>
             "IRC<->Terraria bridge that actually works with new TShock versions";
-        public sealed override Version Version => typeof(IRCrarria).Assembly.GetName().Version;
+        public sealed override Version Version => typeof(IRCrarria).Assembly.GetName().Version!;
 
         private readonly IEnumerable<string> _helpText;
         private static readonly string ConfigPath = Path.Combine(TShock.SavePath, "ircrarria.toml");
@@ -144,12 +139,11 @@ namespace IRCrarria
         {
             TShock.Utils.Broadcast($"[c/CE1F6A:IRC] [c/28FFBF:{user} joined {channel}]", Color.White);
         }
-
-        // ideas for commands "inspired" by terracord (https://github.com/FragLand/terracord)
+        
         private bool ExecuteCommand(string text)
         {
             if (!text.StartsWith(_cfg.Prefix, StringComparison.Ordinal)) return false;
-            switch (text.Substring(_cfg.Prefix.Length))
+            switch (text[_cfg.Prefix.Length..])
             {
                 case "help":
                     foreach (var line in _helpText) _bot.SendMessage(_cfg.Channel, line);
