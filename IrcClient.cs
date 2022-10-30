@@ -1,10 +1,9 @@
-﻿using System.Diagnostics.Contracts;
-using System.Net.Security;
+﻿using System.Net.Security;
 using System.Net.Sockets;
 
 namespace IRCrarria
 {
-    public class IRCbot
+    public class IrcClient
     {
         private enum BotState
         {
@@ -18,25 +17,25 @@ namespace IRCrarria
         private bool Ssl { get; }
         private bool IgnoreSslCert { get; }
 
-        private volatile BotState _state;
-        private TextWriter _writer;
-        private TcpClient _irc;
-        private SslStream _sslStream;
-        private StreamReader _reader;
+        private BotState _state;
+        private TextWriter? _writer;
+        private TcpClient? _irc;
+        private SslStream? _sslStream;
+        private StreamReader? _reader;
 
-        public delegate void WelcomeEventHandler(IRCbot bot);
-        public event WelcomeEventHandler Welcome;
+        public delegate void WelcomeEventHandler(IrcClient bot);
+        public event WelcomeEventHandler? Welcome;
 
-        public delegate void MessageEventHandler(IRCbot bot, string source, string author, string content);
-        public event MessageEventHandler Message;
+        public delegate void MessageEventHandler(IrcClient bot, string source, string author, string content);
+        public event MessageEventHandler? Message;
         
-        public delegate void JoinEventHandler(IRCbot bot, string channel, string user);
-        public event JoinEventHandler Join;
+        public delegate void JoinEventHandler(IrcClient bot, string channel, string user);
+        public event JoinEventHandler? Join;
 
-        public delegate void LeaveEventHandler(IRCbot bot, string channel, string user);
-        public event LeaveEventHandler Leave;
+        public delegate void LeaveEventHandler(IrcClient bot, string channel, string user);
+        public event LeaveEventHandler? Leave;
         
-        public IRCbot(string server, int port, string username, string nick, bool ssl, bool ignoreSslCert)
+        public IrcClient(string server, int port, string username, string nick, bool ssl, bool ignoreSslCert)
         {
             Server = server;
             Port = port;
@@ -62,7 +61,6 @@ namespace IRCrarria
             _writer?.Dispose(); _writer = null;
         }
         
-        // todo: do proper graceful shutdown
         public void RequestDisconnect()
         {
             if (_state == BotState.Running) SyncWriteStream("QUIT");
@@ -93,50 +91,58 @@ namespace IRCrarria
         
         private class ParsedCommand
         {
-            public string Origin;
-            public string Command;
-            public List<string> Params;
+            public readonly string? Origin;
+            public readonly string Command;
+            public readonly List<string>? Params;
+
+            public ParsedCommand(string? origin, string command, List<string>? @params)
+            {
+                Origin = origin;
+                Command = command;
+                Params = @params;
+            }
         }
 
         // returns null on malformed input
-        [Pure]
-        private static ParsedCommand ParseIrc(string input)
+        private static ParsedCommand? ParseIrc(string input)
         {
-            var parsedCommand = new ParsedCommand();
             if (string.IsNullOrEmpty(input)) return null;
-            var prefixLength = 0;
+            string? origin = null;
+            var prefixSpace = 0;
             if (input[0] == ':')
             {
-                prefixLength = input.IndexOf(' ');
-                if (prefixLength == -1) return null;
-                parsedCommand.Origin = input.Substring(1, prefixLength-1);
+                prefixSpace = input.IndexOf(' ');
+                if (prefixSpace == -1) return null;
+                origin = input[1..prefixSpace];
             }
 
-            var commandIndex = prefixLength == 0 ? 0 : prefixLength + 1;
+            var commandIndex = prefixSpace == 0 ? 0 : prefixSpace + 1;
             var trailingIndex = input.IndexOf(':', 1);
-            string command, trailing = null;
+            string fullCommand;
+            string? trailing = null;
             if (trailingIndex == -1)
             {
                 if (input.Length <= commandIndex) return null;
-                command = input.Substring(commandIndex);
+                fullCommand = input[commandIndex..];
             }
             else
             {
-                command = input.Substring(commandIndex, trailingIndex-commandIndex);
-                if (input.Length <= trailingIndex + 1) return parsedCommand;
-                trailing = input.Substring(trailingIndex + 1);
+                fullCommand = input[commandIndex..trailingIndex];
+                if (input.Length <= trailingIndex + 1) return null;
+                trailing = input[(trailingIndex + 1)..];
             }
-            var tempParams = command.Split(new[] {' '}, StringSplitOptions.RemoveEmptyEntries);
-            parsedCommand.Command = tempParams.First();
-            parsedCommand.Params = new List<string>();
-            if (tempParams.Length > 1) parsedCommand.Params.AddRange(tempParams.Skip(1));
-            if (trailing != null) parsedCommand.Params.Add(trailing);
-            return parsedCommand;
+            var tempParams = fullCommand.Split(new[] {' '}, StringSplitOptions.RemoveEmptyEntries);
+            if (tempParams.Length == 0) return null;
+            var command = tempParams[0];
+            var parameters = new List<string>();
+            if (tempParams.Length > 1) parameters.AddRange(tempParams[1..]);
+            if (trailing != null) parameters.Add(trailing);
+            return new ParsedCommand(origin, command, parameters);
         }
 
-        private SslStream GetSslStream(Stream tcpStream, string servername)
+        private SslStream? GetSslStream(Stream tcpStream, string servername)
         {
-            SslStream outputStream = null;
+            SslStream? outputStream = null;
             try
             {
                 outputStream = new SslStream(tcpStream, false,
@@ -153,6 +159,7 @@ namespace IRCrarria
 
         private void SyncWriteStream(string input)
         {
+            if (_writer == null) return;
             _writer.WriteLine(input);
             _writer.Flush();
         }
@@ -160,7 +167,7 @@ namespace IRCrarria
         private string GetAuthor(string prefix)
         {
             var sepIndex = prefix.IndexOf('!');
-            return sepIndex == -1 ? prefix : prefix.Substring(0, sepIndex);
+            return sepIndex == -1 ? prefix : prefix[..sepIndex];
         }
         
         public void Start()
@@ -192,8 +199,7 @@ namespace IRCrarria
                 SyncWriteStream($"NICK {Nick}");
                 SyncWriteStream($"USER {Username} 0 * :{Username}");
 
-                string inputLine;
-                while ((inputLine = _reader.ReadLine()) != null)
+                while (_reader.ReadLine() is { } inputLine)
                 {
                     var message = ParseIrc(inputLine);
                     if (message == null)

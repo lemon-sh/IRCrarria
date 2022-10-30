@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.Xna.Framework;
 using Terraria;
@@ -9,6 +10,7 @@ using TShockAPI.Hooks;
 namespace IRCrarria
 {
     [ApiVersion(2, 1)]
+    [SuppressMessage("ReSharper", "InconsistentNaming")]
     public class IRCrarria : TerrariaPlugin
     {
         public sealed override string Author => "lemon-sh";
@@ -28,7 +30,7 @@ namespace IRCrarria
             RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
         private readonly Config _cfg;
-        private IRCbot _bot;
+        private IrcClient _bot;
 
         public IRCrarria(Main game) : base(game)
         {
@@ -105,7 +107,7 @@ namespace IRCrarria
 
         private void OnPostInitialize(EventArgs args)
         {
-            _bot = new IRCbot(_cfg.Hostname, _cfg.Port, _cfg.Username, _cfg.Nickname, _cfg.UseSsl, _cfg.SkipCertValidation);
+            _bot = new IrcClient(_cfg.Hostname, _cfg.Port, _cfg.Username, _cfg.Nickname, _cfg.UseSsl, _cfg.SkipCertValidation);
             _bot.Welcome += OnIrcWelcome;
             _bot.Message += OnIrcMessage;
             _bot.Join += OnIrcJoin;
@@ -113,7 +115,7 @@ namespace IRCrarria
             new Thread(_ => _bot.Start()).Start();
         }
 
-        private void OnIrcWelcome(IRCbot bot)
+        private void OnIrcWelcome(IrcClient bot)
         {
             bot.SetSelfMode("+B");
             if (_cfg.ConnectCommands != null)
@@ -123,19 +125,19 @@ namespace IRCrarria
             bot.JoinChannel(_cfg.Channel);
         }
 
-        private void OnIrcMessage(IRCbot _, string source, string author, string content)
+        private void OnIrcMessage(IrcClient _, string source, string author, string content)
         {
             if (source != _cfg.Channel) return;
             var text = content.StripNonAscii();
             if (!ExecuteCommand(text)) TShock.Utils.Broadcast($"[c/CE1F6A:IRC] [c/FF9A8C:{author}] {text}", Color.White);
         }
 
-        private void OnIrcLeave(IRCbot _, string channel, string user)
+        private static void OnIrcLeave(IrcClient _, string channel, string user)
         {
             TShock.Utils.Broadcast($"[c/CE1F6A:IRC] [c/FF9A8C:{user} left {channel}]", Color.White);
         }
 
-        private void OnIrcJoin(IRCbot _, string channel, string user)
+        private static void OnIrcJoin(IrcClient _, string channel, string user)
         {
             TShock.Utils.Broadcast($"[c/CE1F6A:IRC] [c/28FFBF:{user} joined {channel}]", Color.White);
         }
