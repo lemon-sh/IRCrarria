@@ -134,7 +134,7 @@ namespace IRCrarria
         private bool IgnoreSslCert { get; }
 
         private ClientState _state = ClientState.Dead;
-        private object _stateLock = new();
+        private readonly object _stateLock = new();
 
         private IrcStream? _stream;
 
@@ -241,19 +241,32 @@ namespace IRCrarria
                     switch (message.Command)
                     {
                         case "PING":
-                            _stream.WriteLine($"PONG {message.Params.Last()}");
+                            if (message.Params != null)
+                            {
+                                _stream.WriteLine($"PONG {message.Params.Last()}");
+                            }
                             break;
                         case "001":
                             Welcome?.Invoke(this);
                             break;
                         case "PRIVMSG":
-                            Message?.Invoke(this, message.Params[0], GetAuthor(message.Origin), message.Params.Last());
+                            if (message.Params != null && message.Origin != null)
+                            {
+                                Message?.Invoke(this, message.Params.First(), GetAuthor(message.Origin),
+                                    message.Params.Last());
+                            }
                             break;
                         case "PART":
-                            Leave?.Invoke(this, message.Params.Last(), GetAuthor(message.Origin));
+                            if (message.Params != null && message.Origin != null)
+                            {
+                                Leave?.Invoke(this, message.Params.Last(), GetAuthor(message.Origin));
+                            }
                             break;
                         case "JOIN":
-                            Join?.Invoke(this, message.Params.Last(), GetAuthor(message.Origin));
+                            if (message.Params != null && message.Origin != null)
+                            {
+                                Join?.Invoke(this, message.Params.Last(), GetAuthor(message.Origin));
+                            }
                             break;
                     }
                 }
