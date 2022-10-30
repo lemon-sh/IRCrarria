@@ -30,7 +30,7 @@ namespace IRCrarria
             RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
         private readonly Config _cfg;
-        private IrcClient _bot;
+        private IrcClient _irc = null!;
 
         public IRCrarria(Main game) : base(game)
         {
@@ -63,11 +63,11 @@ namespace IRCrarria
                 ServerApi.Hooks.ServerBroadcast.Register(this, OnBroadcast);
                 ServerApi.Hooks.GamePostInitialize.Deregister(this, OnPostInitialize);
                 PlayerHooks.PlayerChat -= OnChat;
-                _bot.Welcome -= OnIrcWelcome;
-                _bot.Message -= OnIrcMessage;
-                _bot.Join -= OnIrcJoin;
-                _bot.Leave -= OnIrcLeave;
-                _bot.RequestDisconnect();
+                _irc.Welcome -= OnIrcWelcome;
+                _irc.Message -= OnIrcMessage;
+                _irc.Join -= OnIrcJoin;
+                _irc.Leave -= OnIrcLeave;
+                _irc.RequestDisconnect();
             }
 
             base.Dispose(disposing);
@@ -76,7 +76,7 @@ namespace IRCrarria
         private void OnChat(PlayerChatEventArgs ev)
         {
             var strippedText = ev.RawText.StripNonAscii();
-            _bot.SendMessage(_cfg.Channel, $"\x00039<\x00038{ev.Player.Name}\x00039>\x3 {strippedText}");
+            _irc.SendMessage(_cfg.Channel, $"\x00039<\x00038{ev.Player.Name}\x00039>\x3 {strippedText}");
             TShock.Utils.Broadcast($"[c/28FFBF:TER] [c/BCFFB9:{ev.Player.Name}] {strippedText}", Color.White);
             ev.Handled = true;
         }
@@ -84,13 +84,13 @@ namespace IRCrarria
         private void OnJoin(JoinEventArgs args)
         {
             var player = TShock.Players[args.Who];
-            if (player != null) _bot.SendMessage(_cfg.Channel, $"\x00038{player.Name}\x00039 joined the game.");
+            if (player != null) _irc.SendMessage(_cfg.Channel, $"\x00038{player.Name}\x00039 joined the game.");
         }
 
         private void OnLeave(LeaveEventArgs args)
         {
             var player = TShock.Players[args.Who];
-            if (player != null) _bot.SendMessage(_cfg.Channel, $"\x00038{player.Name}\x00034 left the game.");
+            if (player != null) _irc.SendMessage(_cfg.Channel, $"\x00038{player.Name}\x00034 left the game.");
         }
 
         private void OnBroadcast(ServerBroadcastEventArgs args)
@@ -102,17 +102,17 @@ namespace IRCrarria
                 || text.Equals("Saving world...", StringComparison.OrdinalIgnoreCase)
                 || text.Equals("World saved.", StringComparison.OrdinalIgnoreCase)
             ) return;
-            _bot.SendMessage(_cfg.Channel, $"\x000311{text}");
+            _irc.SendMessage(_cfg.Channel, $"\x000311{text}");
         }
 
         private void OnPostInitialize(EventArgs args)
         {
-            _bot = new IrcClient(_cfg.Hostname, _cfg.Port, _cfg.Username, _cfg.Nickname, _cfg.UseSsl, _cfg.SkipCertValidation);
-            _bot.Welcome += OnIrcWelcome;
-            _bot.Message += OnIrcMessage;
-            _bot.Join += OnIrcJoin;
-            _bot.Leave += OnIrcLeave;
-            new Thread(_ => _bot.Start()).Start();
+            _irc = new IrcClient(_cfg.Hostname, _cfg.Port, _cfg.Username, _cfg.Nickname, _cfg.UseSsl, _cfg.SkipCertValidation);
+            _irc.Welcome += OnIrcWelcome;
+            _irc.Message += OnIrcMessage;
+            _irc.Join += OnIrcJoin;
+            _irc.Leave += OnIrcLeave;
+            new Thread(_ => _irc.Start()).Start();
         }
 
         private void OnIrcWelcome(IrcClient bot)
@@ -148,32 +148,32 @@ namespace IRCrarria
             switch (text[_cfg.Prefix.Length..])
             {
                 case "help":
-                    foreach (var line in _helpText) _bot.SendMessage(_cfg.Channel, line);
+                    foreach (var line in _helpText) _irc.SendMessage(_cfg.Channel, line);
                     break;
                 case "serverinfo":
-                    _bot.SendMessage(_cfg.Channel, "==--- Server Information ---==");
-                    _bot.SendMessage(_cfg.Channel, $"TShock Version: {TShock.VersionNum}");
+                    _irc.SendMessage(_cfg.Channel, "==--- Server Information ---==");
+                    _irc.SendMessage(_cfg.Channel, $"TShock Version: {TShock.VersionNum}");
                     if (_cfg.ExtraDetails != null)
                     {
                         foreach (var detail in _cfg.ExtraDetails)
                             if (detail.Value is string value)
-                                _bot.SendMessage(_cfg.Channel, $"{detail.Key}: {value}");
+                                _irc.SendMessage(_cfg.Channel, $"{detail.Key}: {value}");
                     }
                     var elapsed = DateTime.Now.Subtract(StartTime);
-                    _bot.SendMessage(_cfg.Channel,
+                    _irc.SendMessage(_cfg.Channel,
                         $"Uptime: {elapsed.Days}d {elapsed.Hours}h {elapsed.Minutes}min {elapsed.Seconds}s");
-                    _bot.SendMessage(_cfg.Channel, "==--------------------------==");
+                    _irc.SendMessage(_cfg.Channel, "==--------------------------==");
                     break;
                 case "playing":
-                    _bot.SendMessage(_cfg.Channel,
+                    _irc.SendMessage(_cfg.Channel,
                         $"[{TShock.Utils.GetActivePlayerCount()}/{TShock.Config.Settings.MaxSlots}] players.");
                     var playersOnline = new StringBuilder(256);
                     foreach (var player in TShock.Players.Where(player => player is {Active: true}))
                         playersOnline.Append(player.Name).Append("; ");
-                    if (playersOnline.Length > 0) _bot.SendMessage(_cfg.Channel, playersOnline.ToString());
+                    if (playersOnline.Length > 0) _irc.SendMessage(_cfg.Channel, playersOnline.ToString());
                     break;
                 default:
-                    _bot.SendMessage(_cfg.Channel, "Invalid command!");
+                    _irc.SendMessage(_cfg.Channel, "Invalid command!");
                     break;
             }
             return true;
