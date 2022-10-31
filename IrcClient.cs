@@ -1,5 +1,6 @@
 ﻿using System.Net.Security;
 using System.Net.Sockets;
+using System.Text;
 
 namespace IRCrarria
 {
@@ -7,42 +8,34 @@ namespace IRCrarria
     {
         private class IrcStream : IDisposable
         {
-            private readonly StreamReader _reader;
-            private readonly TextWriter _writer;
-            private readonly SslStream? _sslStream;
-            private readonly TcpClient _tcpStream;
+            private readonly StreamReader _streamReader;
+            private readonly Stream _stream;
+            private readonly object _writeLock = new();
 
             public IrcStream(string server, int port, bool ssl, bool ignoreCert)
             {
-                _tcpStream = new TcpClient();
-                if (!_tcpStream.ConnectAsync(server, port).Wait(10000))
+                var tcpClient = new TcpClient();
+                if (!tcpClient.ConnectAsync(server, port).Wait(10000))
                 {
                     throw new TimeoutException("IRC connection timeout");
                 }
-                if (ssl)
-                {
-                    _sslStream = GetSslStream(_tcpStream.GetStream(), server, ignoreCert);
-                    _reader = new StreamReader(_sslStream);
-                    _writer = new StreamWriter(_sslStream);
-                }
-                else
-                {
-                    _reader = new StreamReader(_tcpStream.GetStream());
-                    _writer = new StreamWriter(_tcpStream.GetStream());
-                }
-
-                _writer = TextWriter.Synchronized(_writer);
+                var tcpStream = tcpClient.GetStream();
+                _stream = ssl ? GetSslStream(tcpStream, server, ignoreCert) : tcpStream;
+                _streamReader = new StreamReader(_stream, leaveOpen:true);
             }
             
             public void WriteLine(string input)
             {
-                _writer.Write(input);
-                _writer.Write("\r\n");
+                lock (_writeLock)
+                {
+                    _stream.Write(Encoding.UTF8.GetBytes(input));
+                    _stream.Write(new byte[]{0x0d, 0x0a}); // crlf
+                }
             }
 
             public string? ReadLine()
             {
-                return _reader.ReadLine();
+                return _streamReader.ReadLine();
             }
             
             private static SslStream GetSslStream(Stream tcpStream, string servername, bool ignoreSslCert)
@@ -64,10 +57,8 @@ namespace IRCrarria
 
             public void Dispose()
             {
-                _reader.Dispose();
-                _writer.Dispose();
-                _sslStream?.Dispose();
-                _tcpStream.Dispose();
+                _streamReader.Dispose();
+                _stream.Dispose();
             }
         }
         
