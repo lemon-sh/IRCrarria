@@ -1,6 +1,7 @@
 ﻿using System.Net.Security;
 using System.Net.Sockets;
 using System.Text;
+using TShockAPI;
 
 namespace IRCrarria
 {
@@ -111,18 +112,18 @@ namespace IRCrarria
                 return new ParsedCommand(origin, command, parameters);
             }
         }
-        
-        private enum ClientState
-        {
-            Dead, Starting, Running
-        }
-        
+
         private string Server { get; }
         private int Port { get; }
         private string Username { get; }
         private string Nick { get; }
         private bool Ssl { get; }
         private bool IgnoreSslCert { get; }
+        
+        private enum ClientState
+        {
+            Dead, Starting, Running
+        }
 
         private ClientState _state = ClientState.Dead;
         private readonly object _stateLock = new();
@@ -226,7 +227,8 @@ namespace IRCrarria
                     var message = ParsedCommand.Parse(inputLine);
                     if (message == null)
                     {
-                        throw new IOException($"IRC Server sent malformed message: {inputLine}");
+                        TShock.Log.Error("IRC Server sent malformed message: '{0}'", inputLine);
+                        continue;
                     }
 
                     switch (message.Command)

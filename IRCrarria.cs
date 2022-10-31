@@ -156,8 +156,10 @@ namespace IRCrarria
                     if (_cfg.ExtraDetails != null)
                     {
                         foreach (var detail in _cfg.ExtraDetails)
+                        {
                             if (detail.Value is string value)
                                 _irc.SendMessage(_cfg.Channel, $"{detail.Key}: {value}");
+                        }
                     }
                     var elapsed = DateTime.Now.Subtract(StartTime);
                     _irc.SendMessage(_cfg.Channel,
@@ -169,7 +171,10 @@ namespace IRCrarria
                         $"[{TShock.Utils.GetActivePlayerCount()}/{TShock.Config.Settings.MaxSlots}] players.");
                     var playersOnline = new StringBuilder(256);
                     foreach (var player in TShock.Players.Where(player => player is {Active: true}))
+                    {
                         playersOnline.Append(player.Name).Append("; ");
+                    }
+
                     if (playersOnline.Length > 0) _irc.SendMessage(_cfg.Channel, playersOnline.ToString());
                     break;
                 default:
