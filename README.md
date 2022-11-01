@@ -1,13 +1,18 @@
 <h1 align="center">IRCrarria</h1>
-A very simple IRC<->Terraria chat bridge for TShock. Tested with Mono 6.12 on Arch Linux and .NET Framework 4.6.1 on Windows (using TShock 4.5.5).
 
-<h3 align="center"><a href="https://files.catbox.moe/70d6vl.zip">Download link (1.2.0)</a></h3>
-<p align="center">Pre-releases are available as GitHub Releases</p>
+A simple IRC<->Terraria chat bridge for TShock. Tested with .NET 6 and TShock 5.0.0.
 
-**Important: After updating, make sure that your config file structure matches the config shown below to avoid errors! (it changes sometimes)**
+<h2 align="center">Download</h2>
+
+* Unstable: [IRCrarria 1.3](https://github.com/lemon-sh/IRCrarria/releases/tag/pre-1.3) (TShock 5 / Terraria 1.4.4)
+* Stable: [IRCrarria 1.2](https://github.com/lemon-sh/IRCrarria/releases/tag/1.2.0) (TShock 4.5 / Terraria 1.4.3)
+
+All releases (and pre-releases) are available [here](https://github.com/lemon-sh/IRCrarria/releases).
+
 <h2 align="center">Installation and configuration</h2>
 
-1. Copy the assemblies `IRCrarria.dll` and `Tomlyn.dll` to the *ServerPlugins* directory in your TShock install
+**Important: After updating, make sure that your config file structure matches the config shown below to avoid errors! (it changes sometimes)**
+1. Unzip the archive to the *ServerPlugins* directory of your TShock install
 2. Create `ircrarria.toml` in your TShock configuration directory (`<tshock installation dir>/tshock`) with the following contents:
 ```toml
 [host]
@@ -33,4 +38,5 @@ connect_commands = [
 "IP & Port" = "127.0.0.1:7777"
 "this server is" = "very cool"
 ```
-3. Done (remember to adjust the config file to your needs)
+3. Adjust the config to your needs
+4. Done!
