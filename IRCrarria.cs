@@ -68,7 +68,7 @@ namespace IRCrarria
                 _irc.Join -= OnIrcJoin;
                 _irc.Leave -= OnIrcLeave;
                 _irc.Quit -= OnIrcQuit;
-                _irc.RequestDisconnect();
+                if (_irc.IsAlive()) _irc.RequestDisconnect();
             }
 
             base.Dispose(disposing);

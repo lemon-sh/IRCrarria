@@ -163,6 +163,11 @@ namespace IRCrarria
                 if (_state != ClientState.Running) throw new InvalidOperationException("This client is not running.");
             }
         }
+
+        public bool IsAlive()
+        {
+            lock (_stateLock) return _state == ClientState.Running;
+        }
         
         private void KillAndDispose()
         {
