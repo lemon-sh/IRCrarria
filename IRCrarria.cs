@@ -67,6 +67,7 @@ namespace IRCrarria
                 _irc.Message -= OnIrcMessage;
                 _irc.Join -= OnIrcJoin;
                 _irc.Leave -= OnIrcLeave;
+                _irc.Quit -= OnIrcQuit;
                 _irc.RequestDisconnect();
             }
 
@@ -112,6 +113,7 @@ namespace IRCrarria
             _irc.Message += OnIrcMessage;
             _irc.Join += OnIrcJoin;
             _irc.Leave += OnIrcLeave;
+            _irc.Quit += OnIrcQuit;
             new Thread(_ => _irc.Start()).Start();
         }
 
@@ -132,9 +134,20 @@ namespace IRCrarria
             if (!ExecuteCommand(text)) TShock.Utils.Broadcast($"[c/CE1F6A:IRC] [c/FF9A8C:{author}] {text}", Color.White);
         }
 
-        private static void OnIrcLeave(IrcClient _, string channel, string user)
+        private static void OnIrcLeave(IrcClient _, string channel, string user, string? reason)
         {
-            TShock.Utils.Broadcast($"[c/CE1F6A:IRC] [c/FF9A8C:{user} left {channel}]", Color.White);
+            var msg = reason != null
+                ? $"[c/CE1F6A:IRC] [c/FF9A8C:{user} has left {channel}:] {reason}"
+                : $"[c/CE1F6A:IRC] [c/FF9A8C:{user} has left {channel}.]";
+            TShock.Utils.Broadcast(msg, Color.White);
+        }
+        
+        private static void OnIrcQuit(IrcClient _, string user, string? reason)
+        {
+            var msg = reason != null
+                ? $"[c/CE1F6A:IRC] [c/FF9A8C:{user} has quit:] {reason}"
+                : $"[c/CE1F6A:IRC] [c/FF9A8C:{user} has quit.]";
+            TShock.Utils.Broadcast(msg, Color.White);
         }
 
         private static void OnIrcJoin(IrcClient _, string channel, string user)

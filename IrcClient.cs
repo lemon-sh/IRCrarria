@@ -1,4 +1,5 @@
-﻿using System.Net.Security;
+﻿using System.Globalization;
+using System.Net.Security;
 using System.Net.Sockets;
 using System.Text;
 using TShockAPI;
@@ -139,8 +140,11 @@ namespace IRCrarria
         public delegate void JoinEventHandler(IrcClient bot, string channel, string user);
         public event JoinEventHandler? Join;
 
-        public delegate void LeaveEventHandler(IrcClient bot, string channel, string user);
+        public delegate void LeaveEventHandler(IrcClient bot, string channel, string user, string? reason);
         public event LeaveEventHandler? Leave;
+        
+        public delegate void QuitEventHandler(IrcClient bot, string user, string? reason);
+        public event QuitEventHandler? Quit;
         
         public IrcClient(string server, int port, string username, string nick, bool ssl, bool ignoreSslCert)
         {
@@ -231,6 +235,21 @@ namespace IRCrarria
                         continue;
                     }
 
+                    if (ushort.TryParse(message.Command, NumberStyles.None, null, out var numericCode))
+                    {
+                        switch (numericCode)
+                        {
+                            case 001:
+                                Welcome?.Invoke(this);
+                                break;
+                            case > 400 and < 600:
+                                TShock.Log.ConsoleWarn("IRC error: '{0}'", inputLine);
+                                break;
+                        }
+
+                        continue;
+                    }
+
                     switch (message.Command)
                     {
                         case "PING":
@@ -239,20 +258,23 @@ namespace IRCrarria
                                 _stream.WriteLine($"PONG {message.Params.Last()}");
                             }
                             break;
-                        case "001":
-                            Welcome?.Invoke(this);
-                            break;
                         case "PRIVMSG":
                             if (message.Params != null && message.Origin != null)
                             {
-                                Message?.Invoke(this, message.Params.First(), GetAuthor(message.Origin),
-                                    message.Params.Last());
+                                Message?.Invoke(this, message.Params[0], GetAuthor(message.Origin),
+                                    message.Params[1]);
                             }
                             break;
                         case "PART":
                             if (message.Params != null && message.Origin != null)
                             {
-                                Leave?.Invoke(this, message.Params.Last(), GetAuthor(message.Origin));
+                                Leave?.Invoke(this, message.Params[0], GetAuthor(message.Origin), message.Params.ElementAtOrDefault(1));
+                            }
+                            break;
+                        case "QUIT":
+                            if (message.Params != null && message.Origin != null)
+                            {
+                                Quit?.Invoke(this, GetAuthor(message.Origin), message.Params.LastOrDefault());
                             }
                             break;
                         case "JOIN":
