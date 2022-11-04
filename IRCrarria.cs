@@ -23,10 +23,10 @@ namespace IRCrarria
         private static readonly string ConfigPath = Path.Combine(TShock.SavePath, "ircrarria.toml");
         private static readonly DateTime StartTime = DateTime.Now;
 
-        private static readonly Regex JoinLeftRegex = new(@"^.+ has (joined|left).$",
+        private static readonly Regex JoinLeaveRegex = new(@"^.+ has (joined|left).$",
             RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
-        public static readonly Regex StripRegex = new(@"\x03(?:\d{1,2}(?:,\d{1,2})?)|[^\u0020-\u007E]",
+        public static readonly Regex StripRegex = new(@"\x03(?:\d{1,2}(?:,\d{1,2})?)|\p{C}+",
             RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
         private readonly Config _cfg;
@@ -76,9 +76,8 @@ namespace IRCrarria
 
         private void OnChat(PlayerChatEventArgs ev)
         {
-            var strippedText = ev.RawText.StripNonAscii();
-            _irc.SendMessage(_cfg.Channel, $"\x00039<\x00038{ev.Player.Name}\x00039>\x3 {strippedText}");
-            TShock.Utils.Broadcast($"[c/28FFBF:TER] [c/BCFFB9:{ev.Player.Name}] {strippedText}", Color.White);
+            _irc.SendMessage(_cfg.Channel, $"\x00039<\x00038{ev.Player.Name}\x00039>\x3 {ev.RawText}");
+            TShock.Utils.Broadcast($"[c/28FFBF:TER] [c/BCFFB9:{ev.Player.Name}] {ev.RawText}", Color.White);
             ev.Handled = true;
         }
 
@@ -99,7 +98,7 @@ namespace IRCrarria
             var text = args.Message.ToString();
             if (text.StartsWith("[c/CE1F6A:IRC]", StringComparison.Ordinal)
                 || text.StartsWith("[c/28FFBF:TER]", StringComparison.Ordinal)
-                || JoinLeftRegex.IsMatch(text)
+                || JoinLeaveRegex.IsMatch(text)
                 || text.Equals("Saving world...", StringComparison.OrdinalIgnoreCase)
                 || text.Equals("World saved.", StringComparison.OrdinalIgnoreCase)
             ) return;
@@ -119,7 +118,7 @@ namespace IRCrarria
 
         private void OnIrcWelcome(IrcClient bot)
         {
-            bot.SetSelfMode("+B");
+            bot.SetSelfMode("+B"); // inspircd bot, doesn't receive history
             if (_cfg.ConnectCommands != null)
                 foreach (var command in _cfg.ConnectCommands)
                     bot.ExecuteRaw(command);
@@ -130,7 +129,7 @@ namespace IRCrarria
         private void OnIrcMessage(IrcClient _, string source, string author, string content)
         {
             if (source != _cfg.Channel) return;
-            var text = content.StripNonAscii();
+            var text = content.StripInvalid();
             if (!ExecuteCommand(text)) TShock.Utils.Broadcast($"[c/CE1F6A:IRC] [c/FF9A8C:{author}] {text}", Color.White);
         }
 
@@ -200,7 +199,7 @@ namespace IRCrarria
 
     public static class StringExtensions
     {
-        public static string StripNonAscii(this string str) =>
+        public static string StripInvalid(this string str) =>
             IRCrarria.StripRegex.Replace(str, string.Empty);
     }
 }
