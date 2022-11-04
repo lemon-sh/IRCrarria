@@ -1,11 +1,11 @@
 <h1 align="center">IRCrarria</h1>
 
-A simple IRC<->Terraria chat bridge for TShock. Tested with .NET 6 and TShock 5.0.0.
+A simple IRC<->Terraria chat bridge for [TShock](https://github.com/Pryaxis/TShock). Tested with .NET 6 and TShock 5.0.0.
 
 <h2 align="center">Download</h2>
 
-* Unstable: [IRCrarria pre-1.3](https://github.com/lemon-sh/IRCrarria/releases/tag/pre-1.3) (TShock 5 / Terraria 1.4.4)
-* Stable: [IRCrarria 1.2](https://github.com/lemon-sh/IRCrarria/releases/tag/1.2.0) (TShock 4.5 / Terraria 1.4.3)
+* Stable: [IRCrarria 1.3](https://github.com/lemon-sh/IRCrarria/releases/tag/1.3.0) (TShock 5 / Terraria 1.4.4)
+* Unstable: N/A
 
 All releases (and pre-releases) are available [here](https://github.com/lemon-sh/IRCrarria/releases).
 
