@@ -30,7 +30,7 @@ namespace IRCrarria
             RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
         private readonly Config _cfg;
-        private IrcClient _irc = null!;
+        private IrcClient? _irc;
 
         public IRCrarria(Main game) : base(game)
         {
@@ -63,12 +63,15 @@ namespace IRCrarria
                 ServerApi.Hooks.ServerBroadcast.Register(this, OnBroadcast);
                 ServerApi.Hooks.GamePostInitialize.Deregister(this, OnPostInitialize);
                 PlayerHooks.PlayerChat -= OnChat;
-                _irc.Welcome -= OnIrcWelcome;
-                _irc.Message -= OnIrcMessage;
-                _irc.Join -= OnIrcJoin;
-                _irc.Leave -= OnIrcLeave;
-                _irc.Quit -= OnIrcQuit;
-                if (_irc.IsAlive()) _irc.RequestDisconnect();
+                if (_irc != null)
+                {
+                    _irc.Welcome -= OnIrcWelcome;
+                    _irc.Message -= OnIrcMessage;
+                    _irc.Join -= OnIrcJoin;
+                    _irc.Leave -= OnIrcLeave;
+                    _irc.Quit -= OnIrcQuit;
+                    if (_irc.IsAlive()) _irc.RequestDisconnect();
+                }
             }
 
             base.Dispose(disposing);
@@ -76,7 +79,7 @@ namespace IRCrarria
 
         private void OnChat(PlayerChatEventArgs ev)
         {
-            _irc.SendMessage(_cfg.Channel, $"\x00039<\x00038{ev.Player.Name}\x00039>\x3 {ev.RawText}");
+            _irc?.SendMessage(_cfg.Channel, $"\x00039<\x00038{ev.Player.Name}\x00039>\x3 {ev.RawText}");
             TShock.Utils.Broadcast($"[c/28FFBF:TER] [c/BCFFB9:{ev.Player.Name}] {ev.RawText}", Color.White);
             ev.Handled = true;
         }
@@ -84,17 +87,18 @@ namespace IRCrarria
         private void OnJoin(JoinEventArgs args)
         {
             var player = TShock.Players[args.Who];
-            if (player != null) _irc.SendMessage(_cfg.Channel, $"\x00038{player.Name}\x00039 joined the game.");
+            if (player != null) _irc?.SendMessage(_cfg.Channel, $"\x00038{player.Name}\x00039 joined the game.");
         }
 
         private void OnLeave(LeaveEventArgs args)
         {
             var player = TShock.Players[args.Who];
-            if (player != null) _irc.SendMessage(_cfg.Channel, $"\x00038{player.Name}\x00034 left the game.");
+            if (player != null) _irc?.SendMessage(_cfg.Channel, $"\x00038{player.Name}\x00034 left the game.");
         }
 
         private void OnBroadcast(ServerBroadcastEventArgs args)
         {
+            if (_irc == null) return;
             var text = args.Message.ToString();
             if (text.StartsWith("[c/CE1F6A:IRC]", StringComparison.Ordinal)
                 || text.StartsWith("[c/28FFBF:TER]", StringComparison.Ordinal)
@@ -156,6 +160,7 @@ namespace IRCrarria
         
         private bool ExecuteCommand(string text)
         {
+            if (_irc == null) return false;
             if (!text.StartsWith(_cfg.Prefix, StringComparison.Ordinal)) return false;
             switch (text[_cfg.Prefix.Length..])
             {
