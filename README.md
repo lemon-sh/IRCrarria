@@ -20,7 +20,7 @@ hostname = "<IRC server hostname>"
 port = 6697
 ssl = true  # change to 'true' if you need TLS
 skip_cert_validation = false  # DANGEROUS! Use only when absolutely required.
-irc_log = true  # log irc commands to the server log file
+irc_log = false  # log irc commands to the server log file
 
 [irc]
 username = "ircrarria"
