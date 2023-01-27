@@ -120,7 +120,8 @@ namespace IRCrarria
         private string Nick { get; }
         private bool Ssl { get; }
         private bool IgnoreSslCert { get; }
-        
+        private bool IrcLog { get; }
+
         private enum ClientState
         {
             Dead, Starting, Running
@@ -146,7 +147,7 @@ namespace IRCrarria
         public delegate void QuitEventHandler(IrcClient bot, string user, string? reason);
         public event QuitEventHandler? Quit;
         
-        public IrcClient(string server, int port, string username, string nick, bool ssl, bool ignoreSslCert)
+        public IrcClient(string server, int port, string username, string nick, bool ssl, bool ignoreSslCert, bool ircLog)
         {
             Server = server;
             Port = port;
@@ -154,6 +155,7 @@ namespace IRCrarria
             Nick = nick;
             Ssl = ssl;
             IgnoreSslCert = ignoreSslCert;
+            IrcLog = ircLog;
         }
 
         private void EnsureAlive()
@@ -233,6 +235,7 @@ namespace IRCrarria
 
                 while (_stream.ReadLine() is { } inputLine)
                 {
+                    if (IrcLog) TShock.Log.Info($"> {inputLine}");
                     var message = ParsedCommand.Parse(inputLine);
                     if (message == null)
                     {

@@ -111,7 +111,7 @@ namespace IRCrarria
 
         private void OnPostInitialize(EventArgs args)
         {
-            _irc = new IrcClient(_cfg.Hostname, _cfg.Port, _cfg.Username, _cfg.Nickname, _cfg.UseSsl, _cfg.SkipCertValidation);
+            _irc = new IrcClient(_cfg.Hostname, _cfg.Port, _cfg.Username, _cfg.Nickname, _cfg.UseSsl, _cfg.SkipCertValidation, _cfg.IrcLog);
             _irc.Welcome += OnIrcWelcome;
             _irc.Message += OnIrcMessage;
             _irc.Join += OnIrcJoin;
