@@ -90,7 +90,7 @@ namespace IRCrarria
                 }
 
                 var commandIndex = prefixSpace == 0 ? 0 : prefixSpace + 1;
-                var trailingIndex = input.IndexOf(':', 1);
+                var trailingIndex = input.IndexOf(':', prefixSpace);
                 string fullCommand;
                 string? trailing = null;
                 if (trailingIndex == -1)
